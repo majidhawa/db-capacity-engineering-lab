@@ -107,3 +107,34 @@ Investigation OPS-2201; fix commit
 
 - **Evidence:** `LAB_JOURNAL.md` — Investigation OPS-2203; fix commit
   `2268046`.
+
+## OPS-2204 — Full export crashes the API
+
+- **S — Symptom:** Under 50 concurrent full-export callers, 100% of 4,677
+  requests failed with EOF, Node repeatedly restarted, and RestartCount rose
+  from 0 to 4.
+
+- **C — Cause:** `/api/patients/export` loaded all ~100,000 patient rows into
+  JavaScript memory and then serialized the entire result with JSON. One export
+  produced ~36,141,185 bytes (~34.5 MiB) of final payload, while logs showed
+  V8 reaching ~252–253 MiB heap and failing inside `JsonStringify`. Memory use
+  therefore scaled O(N) with row count and multiplied further with concurrent
+  callers.
+
+- **A — Action:** Reworked the export to use keyset pagination in batches of
+  1,000 rows and stream each batch incrementally to the HTTP response instead
+  of materializing the whole dataset in memory.
+
+- **R — Result:** Post-fix memory stayed bounded at roughly ~103 MiB / 160 MiB,
+  RestartCount stayed 0, `OOMKilled=false`, and the service remained running.
+  However, 50 concurrent exports still timed out at the 120s client timeout,
+  exposing a throughput/latency limit rather than a memory-safety failure.
+
+- **Scar / lesson:** Large exports should not be built as one giant in-memory
+  response. Streaming or asynchronous export generation keeps memory bounded.
+  For production-scale exports, generate files asynchronously and place them
+  in object storage rather than serving many multi-megabyte exports
+  synchronously from the API.
+
+- **Evidence:** `LAB_JOURNAL.md` — Investigation OPS-2204; fix commit
+  `d0d2e00`.

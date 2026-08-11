@@ -365,9 +365,13 @@ Capture the control group you'll compare every incident against.
 *Reproduce:* `k6 run load-tests/reproduce-OPS-2204.js`
 
 ### Hypothesis
-> Given memory spikes right before each restart and only the big export is
-> affected, I think the cause is ___________________________________________
-> because __________________________________________________________________.
+> I suspect the export endpoint loads the entire patient table into application
+> memory at once. With ~100,000 rows, the result set plus JavaScript objects
+> and JSON serialization buffers may exceed the container's 160 MB memory
+> limit, especially with concurrent export requests. I expect to see API memory
+> climb toward the cgroup limit, followed by an OOM kill/restart. I will
+> reproduce the export load while monitoring docker stats, restart count, logs,
+> and Node heap usage.
 
 ### Observation (evidence)
 > Watch `nodejs_heap_size_used_bytes`, GC pauses, and restarts:
@@ -375,32 +379,90 @@ Capture the control group you'll compare every incident against.
 > docker stats
 > docker compose logs -f capacity-api
 > ```
-| Metric                          | Value |
-|---------------------------------|-------|
-| Approx. payload size per request|       |
-| Peak heap before crash          |       |
-| Time-to-first-crash             |       |
-| Container restart count         |       |
-| GC pause trend                  |       |
+| Metric                           | Value                                                        |
+|----------------------------------|--------------------------------------------------------------|
+| Approx. payload size per request | 36,141,185 bytes (~34.5 MiB)                                 |
+| Peak heap before crash           | ~252–253 MiB                                                 |
+| Time-to-first-crash              | ~30–40 s into the export storm                               |
+| Container restart count          | 0 → 4                                                        |
+| GC pause trend                   | Repeated multi-second Mark-Compact pauses (~5–9 s) before OOM |
 
 > Paste the crash / exit log lines:
 > ```
+> FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
 >
+> Mark-Compact (reduce) ~252 MB heap with multi-second GC pauses
+>
+> Stack trace included JsonStringifier / JsonStringify
+>
+> RestartCount increased from 0 to 4 during the test.
+>
+> k6:
+> 4,677 requests
+> 100.00% failed
+> failure signature: EOF
+> data received = 0 B
 > ```
 
 ### Root cause & mechanism
-> Estimate per-row size, then the full payload: rows × bytes/row = ______ MB.
-> With C concurrent callers, peak resident memory ≈ ______ MB — compare to the
-> container's memory budget (160MB locally / 256MB in prod). Explain what happens
-> to GC frequency, CPU, and
-> throughput as live heap approaches the limit, and why the current approach
-> uses O(N) memory while a better one could use far less. ____________________
+> One successful full export returned 36,141,185 bytes, approximately 34.5 MiB.
+> With ~100,000 patient rows, that is roughly 361 bytes of final JSON payload
+> per row on average.
+>
+> The endpoint uses `SELECT * FROM patients`, loads all rows into JavaScript
+> objects, and then serializes the entire result with JSON before sending the
+> response. Memory usage therefore grows linearly with row count: O(N).
+>
+> For 50 concurrent export callers, the final response payload alone represents
+> roughly:
+>
+> 34.5 MiB × 50 ≈ 1,725 MiB (~1.7 GiB)
+>
+> of concurrent payload work, before accounting for JavaScript object overhead,
+> MySQL result buffers, temporary strings, and JSON serialization copies.
+>
+> The Node logs showed heap usage around 252–253 MiB immediately before repeated
+> `Reached heap limit` failures. As live heap approached the limit, V8 spent
+> several seconds in Mark-Compact GC cycles, throughput collapsed, allocation
+> still failed, Node exited, and Docker restarted the service. The restart count
+> increased from 0 to 4 while k6 observed a 100% failure rate.
+>
+> Increasing container memory would only postpone the crash because the memory
+> requirement still grows with table size and concurrency. A bounded or streamed
+> export keeps only a small portion of the result set in memory at one time.
 
 ### Fix & verify
-> The change you made (consider: bounding how much of the result set is in
-> memory at once, streaming to the response, sensible page sizes, compression):
-> ____________________________________________________________________________
-> Re-run evidence — new peak heap: ______  restarts: ______  error rate: ______
+> The export endpoint was changed from loading the entire patient table into
+> memory with one `SELECT * FROM patients` call to keyset pagination and
+> incremental response streaming. The endpoint now fetches at most 1,000 rows
+> at a time using:
+>
+> `SELECT * FROM patients WHERE id > ? ORDER BY id LIMIT ?`
+>
+> Each batch is serialized and written to the HTTP response before the next
+> batch is fetched, bounding the amount of result-set data held in application
+> memory at one time.
+>
+> Re-run evidence:
+> - Peak container memory: ~102.8 MiB / 160 MiB
+> - RestartCount: 0
+> - OOMKilled: false
+> - Status remained running throughout the test
+> - CPU peaked around ~165%
+> - k6 received ~1.6 GB of streamed response data
+> - 50 / 50 requests timed out at the 120 s client timeout
+>
+> Compared with the broken version, the service no longer entered an OOM/restart
+> loop. Before the fix, RestartCount increased from 0 to 4 and 100% of requests
+> failed with EOF while Node logged `Reached heap limit`. After the fix, memory
+> remained bounded below the 160 MiB container limit and the service stayed
+> alive.
+>
+> The remaining failure mode is throughput/latency rather than memory safety:
+> 50 concurrent full exports could not complete within the 120 s request
+> timeout. A production system should typically run large exports asynchronously
+> or generate them in object storage, rather than serving many concurrent
+> multi-megabyte exports synchronously from the API.
 
 ---
 
@@ -408,13 +470,56 @@ Capture the control group you'll compare every incident against.
 
 > Rank the four incidents by **blast radius** (threat to overall availability at
 > scale), justified with your measured numbers:
-> 1. ____________________________________________________________________
-> 2. ____________________________________________________________________
-> 3. ____________________________________________________________________
-> 4. ____________________________________________________________________
 >
-> If you could ship only **one** fix before a launch, which and why?
-> ____________________________________________________________________________
+> 1. **OPS-2204 — Full export OOM / restart loop**
+>    This had the largest blast radius because one endpoint could crash the
+>    entire API process and affect unrelated users. Under 50 concurrent exports,
+>    100% of 4,677 requests failed, RestartCount increased from 0 to 4, and Node
+>    logged `Reached heap limit` failures while heap usage approached ~252–253 MiB.
 >
-> For each incident, what alert or dashboard would have caught it in production
-> *before* a user filed a ticket? ____________________________________________
+> 2. **OPS-2202 — Application-side connection-pool queueing**
+>    This affected effectively all read endpoints during a registration surge.
+>    At 2,000 VUs, p95 reached ~15 s while the database remained mostly idle.
+>    Throughput plateaued around 270 req/s with the original 2-connection pool.
+>    Increasing the pool too far also pushed API CPU above ~125–137% and caused
+>    high failure rates, showing that this bottleneck could degrade the whole
+>    service under burst traffic.
+>
+> 3. **OPS-2203 — Hot-row admission serialization**
+>    This was severe for admission traffic to one hospital, but its blast radius
+>    was narrower than OPS-2202 and OPS-2204 because contention was concentrated
+>    on a single hot hospital row. Before the fix, throughput collapsed to
+>    ~1.95 req/s with p95 ~56.91 s, matching the ~2 req/s theoretical ceiling
+>    caused by holding the row lock across a ~500 ms external call.
+>
+> 4. **OPS-2201 — Unbounded patient search**
+>    This primarily affected the patient-search endpoint rather than the whole
+>    service. Before the fix, p95 reached 54.01 s and throughput fell to
+>    5.13 req/s. The missing index and unbounded ~10,000-row response caused
+>    heavy work per request, but other endpoints such as recent-patients remained
+>    responsive.
+>
+> If I could ship only **one** fix before launch, I would choose the OPS-2204
+> export fix. It removes a failure mode that can crash and restart the whole API
+> instance, affecting both export users and unrelated requests. The streaming
+> implementation kept memory below the 160 MiB container limit and eliminated
+> the restart loop, even though concurrent full exports still exposed a separate
+> throughput/timeout limit.
+>
+> For each incident, the following alerts or dashboards would have caught the
+> problem earlier:
+>
+> - **OPS-2201:** Alert on patient-search p95 latency, response-size growth,
+>   rows examined per query, and full-table-scan query plans.
+> - **OPS-2202:** Dashboard for application DB-pool utilization, waiting queue
+>   depth, pool wait time, request concurrency, API CPU, and MySQL
+>   Threads_connected/Threads_running. Alert when pool wait time rises while DB
+>   utilization remains low.
+> - **OPS-2203:** Alert on InnoDB row-lock wait time, number of blocked
+>   transactions, lock-wait age, and throughput for admissions to the same
+>   hospital. A dashboard correlating transaction duration with external-call
+>   latency would expose locks being held across network I/O.
+> - **OPS-2204:** Alert on container memory percentage, Node heap usage, long GC
+>   pauses, restart count, OOM/heap-failure log signatures, and export response
+>   size/concurrency. A restart-count increase or heap usage approaching the
+>   limit should page before repeated crashes affect other users.
