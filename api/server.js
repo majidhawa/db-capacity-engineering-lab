@@ -157,13 +157,49 @@ function notifyBedRegistry(_hospitalId) {
 // Full patient export for the analytics/ETL team.
 // ---------------------------------------------------------------------------
 app.get('/api/patients/export', async (_req, res) => {
+  const pool = getPool();
+  const pageSize = 1000;
+  let lastId = 0;
+  let count = 0;
+  let first = true;
+
   try {
-    const pool = getPool();
-    const [rows] = await pool.query('SELECT * FROM patients');
-    res.json({ count: rows.length, data: rows });
+    res.setHeader('Content-Type', 'application/json');
+    res.write('{"data":[');
+
+    while (true) {
+      const [rows] = await pool.query(
+        'SELECT * FROM patients WHERE id > ? ORDER BY id LIMIT ?',
+        [lastId, pageSize]
+      );
+
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        if (!first) res.write(',');
+        res.write(JSON.stringify(row));
+        first = false;
+        count += 1;
+      }
+
+      lastId = rows[rows.length - 1].id;
+    }
+
+    res.end(`],"count":${count}}`);
   } catch (err) {
-    dbErrorsTotal.inc({ route: '/api/patients/export', code: err.code || 'UNKNOWN' });
-    res.status(500).json({ error: err.code || 'ERROR', message: err.message });
+    dbErrorsTotal.inc({
+      route: '/api/patients/export',
+      code: err.code || 'UNKNOWN'
+    });
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: err.code || 'ERROR',
+        message: err.message
+      });
+    } else {
+      res.end();
+    }
   }
 });
 
