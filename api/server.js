@@ -128,11 +128,14 @@ app.post('/api/hospitals/:id/admit', async (req, res) => {
       [hospitalId]
     );
 
-    // Notify the external regional bed registry of the new count before we
-    // commit (simulated here with a network round-trip latency).
+    // Commit immediately to release the row lock before the external call.
+    await conn.commit();
+    conn.release();
+    conn = null;
+
+    // Notify the external regional bed registry after the lock is released.
     await notifyBedRegistry(hospitalId);
 
-    await conn.commit();
     res.json({ status: 'admitted', hospitalId });
   } catch (err) {
     if (conn) {
