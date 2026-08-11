@@ -21,7 +21,7 @@ const MYSQL_CONFIG = {
 
   // Keep the pool small so we don't overwhelm the database with connections.
   waitForConnections: true,
-  connectionLimit: 2,
+  connectionLimit: 4,
   queueLimit: 0,
   connectTimeout: 10_000,
   maxIdle: 2,
