@@ -71,6 +71,29 @@ app.use((req, res, next) => {
 // ---------------------------------------------------------------------------
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+app.get('/healthz', (_req, res) => {
+  res.status(200).json({
+    status: 'alive'
+  });
+});
+
+app.get('/readyz', async (_req, res) => {
+  try {
+    const pool = getPool();
+    await pool.query('SELECT 1');
+
+    res.status(200).json({
+      status: 'ready',
+      database: 'reachable'
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'not_ready',
+      database: 'unreachable'
+    });
+  }
+});
+
 app.get('/metrics', async (_req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());

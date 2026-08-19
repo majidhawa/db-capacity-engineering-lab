@@ -1,0 +1,25 @@
+=== RECOVERED STATE ===
+Wed Aug 19 19:10:25 EAT 2026
+
+--- /healthz ---
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 18
+ETag: W/"12-A7Ru7R7DWDB2sMJMZduPL6roxxE"
+Date: Wed, 19 Aug 2026 16:10:25 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"alive"}
+--- /readyz ---
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 41
+ETag: W/"29-Zzvewp2cUdIUNehgqlmngN3BobQ"
+Date: Wed, 19 Aug 2026 16:10:25 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ready","database":"reachable"}
