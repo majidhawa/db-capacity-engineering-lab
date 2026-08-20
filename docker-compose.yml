@@ -118,6 +118,24 @@ services:
     networks:
       - lab-net
 
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      - SERVICES=ec2,s3,dynamodb,secretsmanager
+      - EC2_VM_MANAGER=docker
+      - EC2_DOWNLOAD_DEFAULT_IMAGES=1
+      - DEBUG=0
+    volumes:
+      - ./localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - lab-net
+
 networks:
   lab-net:
     driver: bridge
