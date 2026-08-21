@@ -79,7 +79,7 @@ app.get('/healthz', (_req, res) => {
 
 app.get('/readyz', async (_req, res) => {
   try {
-    const pool = getPool();
+    const pool = await getPool();
     await pool.query('SELECT 1');
 
     res.status(200).json({
@@ -104,7 +104,7 @@ app.get('/metrics', async (_req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/patients/recent', async (_req, res) => {
   try {
-    const pool = getPool();
+    const pool = await getPool();
     const [rows] = await pool.query(
       'SELECT * FROM patients ORDER BY id DESC LIMIT 50'
     );
@@ -121,7 +121,7 @@ app.get('/api/patients/recent', async (_req, res) => {
 app.get('/api/patients/search', async (req, res) => {
   const lastName = req.query.lastName || '';
   try {
-    const pool = getPool();
+    const pool = await getPool();
     const [rows] = await pool.query(
       'SELECT * FROM patients WHERE last_name = ? LIMIT 50',
       [lastName]
@@ -140,7 +140,7 @@ app.get('/api/patients/search', async (req, res) => {
 // ---------------------------------------------------------------------------
 app.post('/api/hospitals/:id/admit', async (req, res) => {
   const hospitalId = Number(req.params.id);
-  const pool = getPool();
+  const pool = await getPool();
   let conn;
   try {
     conn = await pool.getConnection();
@@ -180,7 +180,7 @@ function notifyBedRegistry(_hospitalId) {
 // Full patient export for the analytics/ETL team.
 // ---------------------------------------------------------------------------
 app.get('/api/patients/export', async (_req, res) => {
-  const pool = getPool();
+  const pool = await getPool();
   const pageSize = 1000;
   let lastId = 0;
   let count = 0;

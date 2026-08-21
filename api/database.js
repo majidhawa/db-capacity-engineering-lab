@@ -6,28 +6,10 @@
  * Connection factories for MySQL and MongoDB.
  */
 
+const fs = require('fs');
 const mysql = require('mysql2/promise');
 const { MongoClient } = require('mongodb');
-
-// ---------------------------------------------------------------------------
-// Environment configuration (with defaults for local runs)
-// ---------------------------------------------------------------------------
-const MYSQL_CONFIG = {
-  host: process.env.MYSQL_HOST || 'mysql-db',
-  port: Number(process.env.MYSQL_PORT || 3306),
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || 'labpassword',
-  database: process.env.MYSQL_DATABASE || 'capacity_lab',
-
-  // Keep the pool small so we don't overwhelm the database with connections.
-  waitForConnections: true,
-  connectionLimit: 4,
-  queueLimit: 0,
-  connectTimeout: 10_000,
-  maxIdle: 2,
-  idleTimeout: 60_000,
-  enableKeepAlive: true,
-};
+const { loadDbCredentials } = require('./secrets');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo-db:27017';
 const MONGO_DB_NAME = process.env.MONGO_DB || 'capacity_lab';
@@ -37,10 +19,38 @@ const MONGO_DB_NAME = process.env.MONGO_DB || 'capacity_lab';
 // ---------------------------------------------------------------------------
 let pool;
 
-function getPool() {
+async function getPool() {
   if (!pool) {
-    pool = mysql.createPool(MYSQL_CONFIG);
+    const credentials = await loadDbCredentials();
+
+    const mysqlConfig = {
+      host: credentials.host,
+      port: Number(credentials.port),
+      user: credentials.username,
+      password: credentials.password,
+      database: credentials.dbname,
+
+      waitForConnections: true,
+      connectionLimit: 4,
+      queueLimit: 0,
+      connectTimeout: 10_000,
+      maxIdle: 2,
+      idleTimeout: 60_000,
+      enableKeepAlive: true,
+    };
+
+    // Aiven requires TLS. Mount the CA certificate into the container and
+    // provide its path through MYSQL_SSL_CA when using the managed database.
+    if (process.env.MYSQL_SSL_CA) {
+      mysqlConfig.ssl = {
+        ca: fs.readFileSync(process.env.MYSQL_SSL_CA),
+        rejectUnauthorized: true,
+      };
+    }
+
+    pool = mysql.createPool(mysqlConfig);
   }
+
   return pool;
 }
 
@@ -59,6 +69,7 @@ async function getMongo() {
     await mongoClient.connect();
     mongoDb = mongoClient.db(MONGO_DB_NAME);
   }
+
   return mongoDb;
 }
 
@@ -67,18 +78,26 @@ async function getMongo() {
 // ---------------------------------------------------------------------------
 async function closeAll() {
   if (pool) {
-    try { await pool.end(); } catch (_) { /* ignore */ }
+    try {
+      await pool.end();
+    } catch (_) {
+      // ignore shutdown errors
+    }
     pool = undefined;
   }
+
   if (mongoClient) {
-    try { await mongoClient.close(); } catch (_) { /* ignore */ }
+    try {
+      await mongoClient.close();
+    } catch (_) {
+      // ignore shutdown errors
+    }
     mongoClient = undefined;
     mongoDb = undefined;
   }
 }
 
 module.exports = {
-  MYSQL_CONFIG,
   MONGO_URI,
   MONGO_DB_NAME,
   getPool,
