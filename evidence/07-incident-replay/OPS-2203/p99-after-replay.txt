@@ -1,0 +1,62 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "route": "/readyz"
+                },
+                "value": [
+                    1787361448.517,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/metrics"
+                },
+                "value": [
+                    1787361448.517,
+                    "0.00992142857142857"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/recent"
+                },
+                "value": [
+                    1787361448.517,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/search"
+                },
+                "value": [
+                    1787361448.517,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/hospitals/:id/admit"
+                },
+                "value": [
+                    1787361448.517,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/healthz"
+                },
+                "value": [
+                    1787361448.517,
+                    "NaN"
+                ]
+            }
+        ]
+    }
+}

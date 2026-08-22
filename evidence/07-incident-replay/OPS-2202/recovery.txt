@@ -1,0 +1,14 @@
+=== OPS-2202 RECOVERY ===
+Sat Aug 22 04:09:29 EAT 2026
+
+=== HEALTHZ ===
+{"status":"alive"}
+=== READYZ ===
+{"status":"ready","database":"reachable"}
+=== SINGLE RECENT REQUEST ===
+status=200 time=0.671385s size=18145 bytes
+
+=== ALERTS ===
+{"status":"success","data":{"alerts":[{"labels":{"alertname":"ApiHighP99Latency","severity":"warning"},"annotations":{"description":"API p99 latency has exceeded 1 second for 2 minutes.","summary":"API p99 latency is high"},"state":"pending","activeAt":"2026-08-22T01:09:20.718802556Z","value":"1.5699999999999976e+00"}]}}
+=== CONTAINER ===
+Status=running RestartCount=0 OOMKilled=false
