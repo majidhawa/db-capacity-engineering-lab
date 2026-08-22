@@ -1,0 +1,60 @@
+=== OPS-2201 ROUTE-SPECIFIC RECOVERY ===
+Sat Aug 22 03:48:00 EAT 2026
+
+=== P99 BY ROUTE ===
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "route": "/healthz"
+                },
+                "value": [
+                    1787359680.354,
+                    "0.00495"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/readyz"
+                },
+                "value": [
+                    1787359680.354,
+                    "4.975"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/metrics"
+                },
+                "value": [
+                    1787359680.354,
+                    "0.07050000000000022"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/recent"
+                },
+                "value": [
+                    1787359680.354,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/search"
+                },
+                "value": [
+                    1787359680.354,
+                    "0.4975"
+                ]
+            }
+        ]
+    }
+}
+
+=== CONTAINER STATE ===
+Status=running RestartCount=0 OOMKilled=false

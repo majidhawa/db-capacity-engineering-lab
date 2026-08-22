@@ -1,0 +1,33 @@
+=== OPS-2204 PRE-REPLAY BASELINE ===
+Sat Aug 22 04:44:05 EAT 2026
+
+=== HEALTHZ ===
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 18
+ETag: W/"12-A7Ru7R7DWDB2sMJMZduPL6roxxE"
+Date: Sat, 22 Aug 2026 01:44:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"alive"}
+=== READYZ ===
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 41
+ETag: W/"29-Zzvewp2cUdIUNehgqlmngN3BobQ"
+Date: Sat, 22 Aug 2026 01:44:08 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ready","database":"reachable"}
+=== CONTAINER ===
+Status=running RestartCount=0 OOMKilled=false MemoryLimit=167772160
+
+=== MEMORY ===
+Mem=31.9MiB / 160MiB CPU=0.79%
+
+=== ACTIVE ALERTS ===
+{"status":"success","data":{"alerts":[]}}

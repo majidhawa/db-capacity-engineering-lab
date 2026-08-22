@@ -29,6 +29,7 @@ echo "Starting application runtime..."
 docker run -d \
   --name "$APP_CONTAINER" \
   --restart unless-stopped \
+  --memory=160m \
   -p "${APP_PORT}:3000" \
   -e PORT=3000 \
   -e DB_SECRET_ARN="$SECRET_ARN" \

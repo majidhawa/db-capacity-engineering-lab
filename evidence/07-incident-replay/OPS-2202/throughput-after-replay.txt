@@ -1,0 +1,53 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "route": "/healthz"
+                },
+                "value": [
+                    1787360015.021,
+                    "0"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/readyz"
+                },
+                "value": [
+                    1787360015.021,
+                    "0"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/metrics"
+                },
+                "value": [
+                    1787360015.021,
+                    "0.19999272753718048"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/recent"
+                },
+                "value": [
+                    1787360015.021,
+                    "4.001747512211677"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/search"
+                },
+                "value": [
+                    1787360015.021,
+                    "0"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,27 @@
+=== OPS-2203 PRE-REPLAY BASELINE ===
+Sat Aug 22 04:14:52 EAT 2026
+
+=== HEALTHZ ===
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 18
+ETag: W/"12-A7Ru7R7DWDB2sMJMZduPL6roxxE"
+Date: Sat, 22 Aug 2026 01:14:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"alive"}
+=== READYZ ===
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 41
+ETag: W/"29-Zzvewp2cUdIUNehgqlmngN3BobQ"
+Date: Sat, 22 Aug 2026 01:14:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ready","database":"reachable"}
+=== ACTIVE ALERTS ===
+{"status":"success","data":{"alerts":[{"labels":{"alertname":"ApiHighP99Latency","severity":"warning"},"annotations":{"description":"API p99 latency has exceeded 1 second for 2 minutes.","summary":"API p99 latency is high"},"state":"pending","activeAt":"2026-08-22T01:14:50.718802556Z","value":"3.4750000000000005e+00"},{"labels":{"alertname":"ApiMemoryPressure","instance":"localhost:9090","job":"prometheus","severity":"warning"},"annotations":{"description":"Resident memory has exceeded 128 MiB.","summary":"API memory pressure is high"},"state":"pending","activeAt":"2026-08-22T01:13:35.718802556Z","value":"1.35798784e+08"}]}}

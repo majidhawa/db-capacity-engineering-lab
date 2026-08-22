@@ -23,7 +23,17 @@ MYSQL_PASSWORD="${MYSQL_PASSWORD:-labpassword}"
 MYSQL_DATABASE="${MYSQL_DATABASE:-capacity_lab}"
 ROW_COUNT="${ROW_COUNT:-100000}"
 
-MYSQL=(mysql -h "${MYSQL_HOST}" -P "${MYSQL_PORT}" -u "${MYSQL_USER}" "-p${MYSQL_PASSWORD}")
+MYSQL=(
+  mysql
+  -h "${MYSQL_HOST}"
+  -P "${MYSQL_PORT}"
+  -u "${MYSQL_USER}"
+  "-p${MYSQL_PASSWORD}"
+)
+
+if [ -n "${MYSQL_SSL_CA:-}" ]; then
+  MYSQL+=(--ssl-ca="${MYSQL_SSL_CA}" --ssl-verify-server-cert)
+fi
 
 echo ">> Waiting for MySQL at ${MYSQL_HOST}:${MYSQL_PORT} ..."
 until "${MYSQL[@]}" -e "SELECT 1" >/dev/null 2>&1; do

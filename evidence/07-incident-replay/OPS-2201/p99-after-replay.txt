@@ -1,0 +1,53 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "route": "/healthz"
+                },
+                "value": [
+                    1787358590.795,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/readyz"
+                },
+                "value": [
+                    1787358590.795,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/metrics"
+                },
+                "value": [
+                    1787358590.795,
+                    "0.009725"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/recent"
+                },
+                "value": [
+                    1787358590.795,
+                    "NaN"
+                ]
+            },
+            {
+                "metric": {
+                    "route": "/api/patients/search"
+                },
+                "value": [
+                    1787358590.795,
+                    "NaN"
+                ]
+            }
+        ]
+    }
+}

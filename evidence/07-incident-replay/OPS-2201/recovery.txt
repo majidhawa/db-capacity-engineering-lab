@@ -1,0 +1,12 @@
+=== OPS-2201 RECOVERY ===
+Sat Aug 22 03:44:04 EAT 2026
+
+=== HEALTHZ ===
+{"status":"alive"}
+=== READYZ ===
+{"status":"ready","database":"reachable"}
+=== SEARCH AFTER RECOVERY ===
+status=200 time=0.289680s size=17392 bytes
+
+=== ALERTS AFTER RECOVERY ===
+{"status":"success","data":{"alerts":[{"labels":{"alertname":"ApiHighP99Latency","severity":"warning"},"annotations":{"description":"API p99 latency has exceeded 1 second for 2 minutes.","summary":"API p99 latency is high"},"state":"firing","activeAt":"2026-08-22T00:40:40.718802556Z","value":"1.584999999999998e+00"}]}}
