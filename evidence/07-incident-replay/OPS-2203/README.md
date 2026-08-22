@@ -33,13 +33,13 @@ The original workload was replayed unchanged:
 
 The first clean replay produced:
 
-- 172 completed requests
-- 416 interrupted iterations
-- throughput: 2.87 req/s
-- average latency: 30.3s
-- p95 latency: 56.95s
-- maximum latency: 59.67s
-- completed-request HTTP failure rate: 0%
+- 142 completed requests
+- 411 interrupted iterations
+- throughput: 2.37 req/s
+- average latency: 36.22s
+- p95 latency: 57.68s
+- maximum latency: 59.78s
+- completed-request HTTP failure rate: 2.11%
 
 The latency SLO (`p95 < 1s`) failed.
 
@@ -79,8 +79,8 @@ Original post-fix Assignment 1 result:
 
 C7 Aiven replay:
 
-- throughput: 2.87 req/s
-- p95: 56.95s
+- throughput: 2.37 req/s
+- p95: 57.68s
 
 The replay therefore demonstrates a significant rehosting capacity difference.
 
